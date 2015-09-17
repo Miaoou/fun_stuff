@@ -1,14 +1,12 @@
-// InsertionSort.cpp
+// InsertionSort.h
 
-#include <array>
-#include <iterator>
-#include <utility>
+#pragma once
+#ifndef INSERTIONSORT_H
+#define INSERTIONSORT_H
 
-int ar[] = { 5, 2, 4, 13, 0, 44, 0 };
-auto arSz = sizeof( ar ) / sizeof( int );
-
+template< int arSz >
 void
-insertion_sort_c()
+insertion_sort_c( int( &ar )[ arSz ] )
 {
     for( int i = 1; i < arSz; ++i )
     {
@@ -23,8 +21,9 @@ insertion_sort_c()
     }
 }
 
+template< int arSz >
 void
-insertion_sort_cpp()
+insertion_sort_cpp( int( &ar )[ arSz ] )
 {
     using namespace std;
 
@@ -33,11 +32,4 @@ insertion_sort_cpp()
             swap( *it2, *( it2 - 1 ) );
 }
 
-//int
-//main()
-//{
-//    //insertion_sort_c();
-//    insertion_sort_cpp();
-//
-//    return 0;
-//}
+#endif // INSERTIONSORT_H

@@ -1,14 +1,12 @@
-/// BubbleSort.cpp
+// BubbleSort.h
 
-#include <iterator>
-#include <algorithm>
-#include <functional>
+#pragma once
+#ifndef BUBBLESORT_H
+#define BUBBLESORT_H
 
-int ar[] = { 5, 2, 4, 13, 0, 44, 0 };
-auto arSz = sizeof( ar ) / sizeof( int );
-
+template< int arSz >
 void
-bubble_sort_c()
+bubble_sort_c( int( &ar )[ arSz ] )
 {
     for( int i = 1; i < arSz; ++i )
     {
@@ -22,8 +20,9 @@ bubble_sort_c()
     }
 }
 
+template< int arSz >
 void
-bubble_sort_cpp()
+bubble_sort_cpp( int( &ar )[ arSz ] )
 {
     using namespace std;
 
@@ -33,11 +32,4 @@ bubble_sort_cpp()
         swap( *it, *( it + 1 ) );
 }
 
-//int
-//main()
-//{
-//    //bubble_sort_c();
-//    bubble_sort_cpp();
-//
-//    return 0;
-//}
+#endif // BUBBLESORT_H
