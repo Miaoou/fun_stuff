@@ -10,8 +10,7 @@ int ar[] = { 5, 2, 4, 13, 0, 44, 0 };
 int
 main()
 {
-    bubble_sort_c( ar );
-    //bubble_sort_cpp( ar );
+    insertion_sort_c( ar );
 
     return 0;
 }

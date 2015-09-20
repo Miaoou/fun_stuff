@@ -6,18 +6,20 @@
 
 template< int arSz >
 void
-insertion_sort_c( int( &ar )[ arSz ] )
+insertion_sort_c( int( &a )[ arSz ] )
 {
     for( int i = 1; i < arSz; ++i )
     {
-        int j = i;
-        while( ar[ j ] < ar[ j - 1 ] )
+        int key = a[ i ];
+        int j = i - 1;
+        
+        while( j >= 0 && a[ j ] > key )
         {
-            auto tmp = ar[ j ];
-            ar[ j ] = ar[ j - 1 ];
-            ar[ j - 1 ] = tmp;
+            a[ j + 1 ] = a[ j ];
             --j;
         }
+
+        a[ j + 1 ] = key;
     }
 }
 
