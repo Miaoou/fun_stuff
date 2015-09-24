@@ -8,18 +8,13 @@ template< int arSz >
 void
 insertion_sort_c( int( &a )[ arSz ] )
 {
-    for( int i = 1; i < arSz; ++i )
+    for( int i = 1, j = 0; i < arSz; ++i )
     {
-        int key = a[ i ];
-        int j = i - 1;
-        
-        while( j >= 0 && a[ j ] > key )
-        {
-            a[ j + 1 ] = a[ j ];
-            --j;
-        }
+        int key = a[ i ]; // element to insert
+        for( j = i - 1; j >= 0 && a[ j ] > key; --j )
+            a[ j + 1 ] = a[ j ]; // shift every element between the insert position and the element to insert
 
-        a[ j + 1 ] = key;
+        a[ j + 1 ] = key; // insert element
     }
 }
 
