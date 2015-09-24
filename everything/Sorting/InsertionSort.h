@@ -29,9 +29,8 @@ insertion_sort_cpp( int( &ar )[ arSz ] )
 {
     using namespace std;
 
-    for( auto it = begin( ar ) + 1; it != end( ar ); ++it )
-        for( auto it2 = it; *it2 < *( it2 - 1 ); --it2 )
-            swap( *it2, *( it2 - 1 ) );
+    for( auto it = begin( ar ); it != end( ar ); ++it )
+        rotate( upper_bound( begin( ar ), it, *it ), it, it + 1 );
 }
 
 #endif // INSERTIONSORT_H
