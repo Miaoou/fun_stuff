@@ -6,12 +6,11 @@
 #include "QuickSort.h"
 
 int ar[] = { 5, 2, 4, 13, 0, 44, 0 };
-#include <set>
 
 int
 main()
 {
-    insertion_sort_cpp( ar );
+    insertion_sort_c( ar );
 
     return 0;
 }
