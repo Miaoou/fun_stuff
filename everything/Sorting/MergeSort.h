@@ -48,13 +48,27 @@ merge_sort_c( int ar[], int arSz )
     return merge( left, right, arSz );
 }
 
+template< typename RandomAccessItT >
+void
+merge_sort_cpp_impl( RandomAccessItT first, RandomAccessItT last )
+{
+    using namespace std;
+
+    if( last - first > 1 )
+    {
+        RandomAccessItT middle = first + ( last - first ) / 2;
+        merge_sort_cpp_impl( first, middle );
+        merge_sort_cpp_impl( middle, last );
+        inplace_merge( first, middle, last, less< int >() );
+    }
+}
+
 template< int arSz >
 void
 merge_sort_cpp( int( &ar )[ arSz ] )
 {
     using namespace std;
-
-
+    merge_sort_cpp_impl( begin( ar ), end( ar ) );
 }
 
 #endif // MERGESORT_H
