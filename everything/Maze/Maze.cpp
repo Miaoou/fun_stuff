@@ -8,6 +8,7 @@
 #include <tuple>
 #include <algorithm>
 #include <iterator>
+#include <functional>
 
 using namespace std; //to remove
 
@@ -97,9 +98,9 @@ solveMaze( char(*ar)[10][9], int xSz, int ySz, int xEnd, int yEnd )
         auto nodeToAnalyze = is_being_analyzed.top();
         is_being_analyzed.pop();
 
-        int x = nodeToAnalyze->_x;
-        int y = nodeToAnalyze->_y;
-        x, y;
+        //int x = nodeToAnalyze->_x;
+        //int y = nodeToAnalyze->_y;
+        //x, y;
 
         if( !nodeToAnalyze->_valid )
             continue;
