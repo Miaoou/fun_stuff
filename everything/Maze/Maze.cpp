@@ -3,8 +3,9 @@
 #include <iostream>
 #include <queue>
 #include <unordered_set>
-#include <unordered_map>
+#include <set>
 #include <memory>
+#include <tuple>
 
 using namespace std; //to remove
 
@@ -17,16 +18,17 @@ struct Node
     int _cost{ 0 };
     int _heuristic{ 0 };
     shared_ptr< Node > _caller{ nullptr };
+    bool _valid{ true };
 };
 
 auto
-closestNode = []( shared_ptr< Node > const& left, shared_ptr< Node > const& right ) -> bool
+priorityCondition = []( shared_ptr< Node > const& left, shared_ptr< Node > const& right ) -> bool
 {
-    return left->_heuristic < right->_heuristic;
+    return ( left->_cost + left->_heuristic ) < ( right->_cost + right->_heuristic );
 };
 
 bool
-operator==( shared_ptr< Node > const& left, shared_ptr< Node > const& right )
+equalNodes( shared_ptr< Node > const& left, shared_ptr< Node > const& right )
 {
     return ( left->_x == right->_x ) && ( left->_y == right->_y );
 };
@@ -50,20 +52,8 @@ inboundAndFree( char( *ar )[ 10 ][ 9 ], int x, int y, int X, int Y )
         && ( *ar )[ y ][ x ] == ' ';
 }
 
-class PQueue
-    : public priority_queue< shared_ptr< Node >, vector< shared_ptr< Node > >, decltype( closestNode ) >
-{
-public:
-    PQueue() : priority_queue< shared_ptr< Node >, vector< shared_ptr< Node > >, decltype( closestNode ) >( closestNode ) {}
-    bool alreadyExists( shared_ptr< Node > const& node )
-    {
-        auto it = find( this->c.begin(), this->c.end(), node );
-        return( it != this->c.end() && ( *it )->_cost < node->_cost );
-    }
-};
-
 int
-euclidian( Node const& node, int xEnd, int yEnd )
+manhattan_dist( Node const& node, int xEnd, int yEnd )
 {
     return abs( node._x - xEnd ) + abs( node._y - yEnd );
 }
@@ -79,21 +69,45 @@ findNeighbours( Node const& node )
     };
 }
 
+class PQueue
+    : public priority_queue< shared_ptr< Node >, vector< shared_ptr< Node > >, decltype( priorityCondition ) >
+{
+public:
+    PQueue() : priority_queue< shared_ptr< Node >, vector< shared_ptr< Node > >, decltype( priorityCondition ) >( priorityCondition ) {}
+    pair< bool, vector< shared_ptr< Node > >::iterator >
+    findByCoord( shared_ptr< Node > const& nodeToFind )
+    {
+        auto foundIt = find_if( begin( this->c ), end( this->c ), [ &nodeToFind ] ( shared_ptr< Node > const& node )
+        {
+            return ( node->_x == nodeToFind->_x ) && ( node->_y == nodeToFind->_y );
+        } );
+
+        return make_pair( ( foundIt != end( this->c ) ), foundIt );
+    }
+};
+
 vector< shared_ptr< Node > >
 solveMaze( char(*ar)[10][9], int xSz, int ySz, int xEnd, int yEnd )
 {
-    auto start = make_shared< Node >( 1, 1 );
-    unordered_set< shared_ptr< Node > > analyzed;
-    PQueue toBeAnalyzed;
-    toBeAnalyzed.push( move( start ) );
+    vector< shared_ptr< Node > > analyzed;
+    PQueue is_being_analyzed;
+    is_being_analyzed.push( make_shared< Node >( 1, 1 ) ); // start node
     
-    while( !toBeAnalyzed.empty() )
+    while( !is_being_analyzed.empty() )
     {
-        auto nodeToAnalyze = toBeAnalyzed.top();
-        toBeAnalyzed.pop();
+        auto nodeToAnalyze = is_being_analyzed.top();
+        is_being_analyzed.pop();
+
+        if( !nodeToAnalyze->_valid )
+            continue;
+
+        cout << nodeToAnalyze->_cost << " " << nodeToAnalyze->_heuristic << ": " << nodeToAnalyze->_cost + nodeToAnalyze->_heuristic << endl;
 
         if( ( *ar )[ nodeToAnalyze->_y ][ nodeToAnalyze->_x ] == 'E' )
+        {
+            analyzed.push_back( nodeToAnalyze );
             return reconstruct_path( nodeToAnalyze );
+        }
         else
         {
             for( auto const& coord : findNeighbours( *nodeToAnalyze ) )
@@ -104,19 +118,40 @@ solveMaze( char(*ar)[10][9], int xSz, int ySz, int xEnd, int yEnd )
                     tie( xNeighbour, yNeighbour ) = coord;
                     auto neighbour = make_shared< Node >( xNeighbour, yNeighbour );
 
-                    auto it = analyzed.find( neighbour );
-                    auto exists = it != analyzed.end() && ( *it )->_cost < neighbour->_cost;
-                    if( !( exists || toBeAnalyzed.alreadyExists( neighbour ) ) )
+                    auto res = find_if( begin( analyzed ), end( analyzed ), [ &neighbour ] ( shared_ptr< Node > const& node )
+                    {
+                        return ( node->_x == neighbour->_x ) && ( node->_y == neighbour->_y );
+                    } );
+
+                    if( res != end( analyzed ) )
+                        continue;
+
+                    bool found = false;
+                    vector< shared_ptr< Node > >::iterator foundIt;
+                    tie( found, foundIt ) = is_being_analyzed.findByCoord( neighbour );
+
+                    if( !found )
                     {
                         neighbour->_caller = nodeToAnalyze;
                         neighbour->_cost = nodeToAnalyze->_cost + 1;
-                        neighbour->_heuristic = neighbour->_cost + euclidian( *neighbour, xEnd, yEnd );
-                        toBeAnalyzed.push( neighbour );
+                        neighbour->_heuristic = manhattan_dist( *neighbour, xEnd, yEnd );
+                        is_being_analyzed.push( neighbour );
+                    }
+                    else
+                    {
+                        neighbour->_cost = nodeToAnalyze->_cost + 1;
+                        if( neighbour->_cost < ( *foundIt )->_cost )
+                        {
+                            ( *foundIt )->_valid = false;
+                            neighbour->_caller = nodeToAnalyze;
+                            neighbour->_heuristic = manhattan_dist( *neighbour, xEnd, yEnd );
+                            is_being_analyzed.push( neighbour );
+                        }
                     }
                 }
             }
 
-            analyzed.insert( nodeToAnalyze );
+            analyzed.push_back( nodeToAnalyze );
         }
     }
 
