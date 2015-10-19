@@ -6,6 +6,8 @@
 #include <set>
 #include <memory>
 #include <tuple>
+#include <algorithm>
+#include <iterator>
 
 using namespace std; //to remove
 
@@ -24,13 +26,7 @@ struct Node
 auto
 priorityCondition = []( shared_ptr< Node > const& left, shared_ptr< Node > const& right ) -> bool
 {
-    return ( left->_cost + left->_heuristic ) < ( right->_cost + right->_heuristic );
-};
-
-bool
-equalNodes( shared_ptr< Node > const& left, shared_ptr< Node > const& right )
-{
-    return ( left->_x == right->_x ) && ( left->_y == right->_y );
+    return ( left->_cost + left->_heuristic ) > ( right->_cost + right->_heuristic );
 };
 
 vector< shared_ptr< Node > >
@@ -49,7 +45,7 @@ inboundAndFree( char( *ar )[ 10 ][ 9 ], int x, int y, int X, int Y )
 {
     return x <= X && x >= 0
         && y <= Y && y >= 0
-        && ( *ar )[ y ][ x ] == ' ';
+        && ( ( *ar )[ y ][ x ] == ' ' || ( *ar )[ y ][ x ] == 'E' );
 }
 
 int
@@ -91,17 +87,24 @@ solveMaze( char(*ar)[10][9], int xSz, int ySz, int xEnd, int yEnd )
 {
     vector< shared_ptr< Node > > analyzed;
     PQueue is_being_analyzed;
-    is_being_analyzed.push( make_shared< Node >( 1, 1 ) ); // start node
+
+    auto startNode = make_shared< Node >( 1, 1 );
+    startNode->_heuristic = manhattan_dist( *startNode, xEnd, yEnd );
+    is_being_analyzed.push( startNode ); // start node
     
     while( !is_being_analyzed.empty() )
     {
         auto nodeToAnalyze = is_being_analyzed.top();
         is_being_analyzed.pop();
 
+        int x = nodeToAnalyze->_x;
+        int y = nodeToAnalyze->_y;
+        x, y;
+
         if( !nodeToAnalyze->_valid )
             continue;
 
-        cout << nodeToAnalyze->_cost << " " << nodeToAnalyze->_heuristic << ": " << nodeToAnalyze->_cost + nodeToAnalyze->_heuristic << endl;
+        //cout << nodeToAnalyze->_cost << " " << nodeToAnalyze->_heuristic << ": " << nodeToAnalyze->_cost + nodeToAnalyze->_heuristic << endl;
 
         if( ( *ar )[ nodeToAnalyze->_y ][ nodeToAnalyze->_x ] == 'E' )
         {
@@ -158,21 +161,34 @@ solveMaze( char(*ar)[10][9], int xSz, int ySz, int xEnd, int yEnd )
     return vector< shared_ptr< Node > >();
 }
 
+ostream&
+operator<<( ostream& os, shared_ptr< Node > const& node )
+{
+    static int i = 0;
+    ++i;
+    os << "[" << i << "] " << node->_x << " " << node->_y << "  " << node->_cost << " " << node->_heuristic << " " << node->_heuristic + node->_cost;
+    return os;
+}
+
 int
 main()
 {
     char ar[10][9] = {
         { '#','#','#','#','#','#','#','#','#' },
-        { '#',' ',' ',' ','#',' ',' ',' ','#' },
-        { '#',' ',' ',' ','#',' ',' ',' ','#' },
-        { '#',' ',' ',' ',' ',' ',' ',' ','#' },
-        { '#',' ',' ',' ',' ',' ',' ',' ','#' },
-        { '#',' ',' ',' ','#','#','#',' ','#' },
-        { '#',' ',' ',' ','#',' ',' ',' ','#' },
-        { '#',' ',' ',' ','#',' ',' ',' ','#' },
+        { '#',' ',' ','#',' ',' ',' ',' ','#' },
+        { '#',' ',' ','#',' ',' ',' ',' ','#' },
+        { '#',' ',' ','#',' ',' ',' ',' ','#' },
+        { '#',' ',' ','#',' ',' ',' ',' ','#' },
+        { '#',' ',' ','#',' ',' ',' ',' ','#' },
+        { '#',' ',' ','#',' ',' ','#','#','#' },
+        { '#',' ',' ',' ',' ',' ','#',' ','#' },
         { '#',' ',' ',' ',' ',' ',' ','E','#' },
         { '#','#','#','#','#','#','#','#','#' }
     };
 
-    solveMaze( &ar, 9, 10, 7, 8 );
+    auto res = solveMaze( &ar, 9, 10, 7, 8 );
+
+    reverse_copy( begin( res ), end( res ), ostream_iterator< shared_ptr< Node > >( cout, "\n" ) );
+
+    return 0;
 }
