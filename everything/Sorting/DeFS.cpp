@@ -10,6 +10,7 @@
 #include <iterator>
 #include <functional>
 #include <array>
+#include <stack>
 
 using namespace std; //to remove
 
@@ -46,19 +47,17 @@ reconstructPath( shared_ptr< Node > goal )
     return path;
 }
 
-shared_ptr< Node >
-getNextNeighbour( char( *ar )[ 10 ][ 9 ], shared_ptr< Node > const& current )
+void
+addNeighbours( char( *ar )[ 10 ][ 9 ], stack< shared_ptr< Node > >& queueNodes, shared_ptr< Node >& node )
 {
-    if( inboundAndFree( ar, current->_x + 1, current->_y, 9, 10 ) )
-        return make_shared< Node >( current->_x + 1, current->_y, current );
-    if( inboundAndFree( ar, current->_x, current->_y + 1, 9, 10 ) )
-        return make_shared< Node >( current->_x, current->_y + 1, current );
-    if( inboundAndFree( ar, current->_x - 1, current->_y, 9, 10 ) )
-        return make_shared< Node >( current->_x - 1, current->_y, current );
-    if( inboundAndFree( ar, current->_x, current->_y - 1, 9, 10 ) )
-        return make_shared< Node >( current->_x, current->_y - 1, current );
-
-    return nullptr;
+    if( inboundAndFree( ar, node->_x + 1, node->_y, 9, 10 ) )
+        queueNodes.push( make_shared< Node >( node->_x + 1, node->_y, node ) );
+    if( inboundAndFree( ar, node->_x, node->_y + 1, 9, 10 ) )
+        queueNodes.push( make_shared< Node >( node->_x, node->_y + 1, node ) );
+    if( inboundAndFree( ar, node->_x - 1, node->_y, 9, 10 ) )
+        queueNodes.push( make_shared< Node >( node->_x - 1, node->_y, node ) );
+    if( inboundAndFree( ar, node->_x, node->_y - 1, 9, 10 ) )
+        queueNodes.push( make_shared< Node >( node->_x, node->_y - 1, node ) );
 }
 
 //bool
@@ -73,30 +72,22 @@ getNextNeighbour( char( *ar )[ 10 ][ 9 ], shared_ptr< Node > const& current )
 vector< shared_ptr< Node > >
 solveMaze( char( *ar )[ 10 ][ 9 ], int xSz, int ySz, int xEnd, int yEnd )
 {
-    queue< shared_ptr< Node > > queueNode;
+    stack< shared_ptr< Node > > stackNode;
 
     auto start = make_shared< Node >( 1, 1, nullptr );
-    queueNode.push( start );
+    stackNode.push( start );
 
-    while( !queueNode.empty() )
+    while( !stackNode.empty() )
     {
-        auto current = queueNode.front();
-        queueNode.pop();
+        auto current = stackNode.top();
+        stackNode.pop();
 
         if( ( *ar )[ current->_y ][ current->_x ] == 'E' )
             return reconstructPath( current );
 
         ( *ar )[ current->_y ][ current->_x ] = '@'; // mark as analyzed
 
-        shared_ptr< Node > neighbour;
-        while( neighbour = getNextNeighbour( ar, current ) )
-        {
-            queueNode.push( neighbour );
-            break;
-        }
-        
-        if( !neighbour )
-            queueNode.push( current->_caller );
+        addNeighbours( ar, stackNode, current );
     }
 
     return vector< shared_ptr< Node > >();
@@ -120,9 +111,9 @@ main()
         { '#',' ',' ','#',' ',' ','#',' ','#' },
         { '#',' ',' ','#',' ',' ','#',' ','#' },
         { '#',' ',' ','#',' ',' ','#',' ','#' },
+        { '#',' ',' ','#','E',' ','#',' ','#' },
         { '#',' ',' ','#',' ',' ','#',' ','#' },
-        { '#',' ',' ','#',' ',' ','#',' ','#' },
-        { '#',' ',' ',' ',' ',' ','#','E','#' },
+        { '#',' ',' ',' ',' ',' ','#',' ','#' },
         { '#',' ',' ',' ',' ',' ','#',' ','#' },
         { '#','#','#','#','#','#','#','#','#' }
     };
