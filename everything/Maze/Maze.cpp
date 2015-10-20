@@ -9,12 +9,12 @@
 #include <algorithm>
 #include <iterator>
 #include <functional>
-
+#include <array>
 using namespace std; //to remove
 
 struct Node
 {
-    Node( int xSz, int ySz ) : _x( xSz ), _y( ySz ) {}
+    Node( int xSz, int ySz, shared_ptr< Node > const& caller ) : _x( xSz ), _y( ySz ), _caller{ caller } {}
     //Node( Node const& ) = default;
     int _x{ 0 };
     int _y{ 0 };
@@ -50,20 +50,26 @@ inboundAndFree( char( *ar )[ 10 ][ 9 ], int x, int y, int X, int Y )
 }
 
 int
-manhattan_dist( Node const& node, int xEnd, int yEnd )
+manhattan_dist( shared_ptr< Node > const& node, int xEnd, int yEnd )
 {
-    return abs( node._x - xEnd ) + abs( node._y - yEnd );
+    return abs( node->_x - xEnd ) + abs( node->_y - yEnd );
 }
 
-vector< pair< int, int > >
-findNeighbours( Node const& node )
+vector< shared_ptr< Node > >
+findNeighbours( char( *ar )[ 10 ][ 9 ], shared_ptr< Node > const& node )
 {
-    return vector< pair< int, int > >{
-        make_pair( node._x + 1, node._y ),
-        make_pair( node._x, node._y + 1 ),
-        make_pair( node._x - 1, node._y ),
-        make_pair( node._x, node._y - 1 )
-    };
+    vector< shared_ptr< Node > > neighbours;
+
+    if( inboundAndFree( ar, node->_x + 1, node->_y, 9, 10 ) )
+        neighbours.push_back( make_shared< Node >( node->_x + 1, node->_y, node ) );
+    if( inboundAndFree( ar, node->_x, node->_y + 1, 9, 10 ) )
+        neighbours.push_back( make_shared< Node >( node->_x, node->_y + 1, node ) );
+    if( inboundAndFree( ar, node->_x - 1, node->_y, 9, 10 ) )
+        neighbours.push_back( make_shared< Node >( node->_x - 1, node->_y, node ) );
+    if( inboundAndFree( ar, node->_x, node->_y - 1, 9, 10 ) )
+        neighbours.push_back( make_shared< Node >( node->_x, node->_y - 1, node ) );
+
+    return neighbours;
 }
 
 class PQueue
@@ -71,6 +77,7 @@ class PQueue
 {
 public:
     PQueue() : priority_queue< shared_ptr< Node >, vector< shared_ptr< Node > >, decltype( priorityCondition ) >( priorityCondition ) {}
+
     pair< bool, vector< shared_ptr< Node > >::iterator >
     findByCoord( shared_ptr< Node > const& nodeToFind )
     {
@@ -86,11 +93,11 @@ public:
 vector< shared_ptr< Node > >
 solveMaze( char(*ar)[10][9], int xSz, int ySz, int xEnd, int yEnd )
 {
-    vector< shared_ptr< Node > > analyzed;
+    array< array< shared_ptr< Node >, 10 >, 9 > analyzed;
     PQueue is_being_analyzed;
 
-    auto startNode = make_shared< Node >( 1, 1 );
-    startNode->_heuristic = manhattan_dist( *startNode, xEnd, yEnd );
+    auto startNode = make_shared< Node >( 1, 1, nullptr );
+    startNode->_heuristic = manhattan_dist( startNode, xEnd, yEnd );
     is_being_analyzed.push( startNode ); // start node
     
     while( !is_being_analyzed.empty() )
@@ -98,64 +105,43 @@ solveMaze( char(*ar)[10][9], int xSz, int ySz, int xEnd, int yEnd )
         auto nodeToAnalyze = is_being_analyzed.top();
         is_being_analyzed.pop();
 
-        //int x = nodeToAnalyze->_x;
-        //int y = nodeToAnalyze->_y;
-        //x, y;
-
         if( !nodeToAnalyze->_valid )
             continue;
 
-        //cout << nodeToAnalyze->_cost << " " << nodeToAnalyze->_heuristic << ": " << nodeToAnalyze->_cost + nodeToAnalyze->_heuristic << endl;
-
         if( ( *ar )[ nodeToAnalyze->_y ][ nodeToAnalyze->_x ] == 'E' )
         {
-            analyzed.push_back( nodeToAnalyze );
+            analyzed[ nodeToAnalyze->_y ][ nodeToAnalyze->_x ] = nodeToAnalyze;
             return reconstruct_path( nodeToAnalyze );
         }
         else
         {
-            for( auto const& coord : findNeighbours( *nodeToAnalyze ) )
+            for( auto const& neighbour : findNeighbours( ar, nodeToAnalyze ) )
             {
-                if( inboundAndFree( ar, coord.first, coord.second, xSz, ySz ) )
+                if( analyzed[ neighbour->_y ][ neighbour->_x ] )
+                    continue;
+
+                neighbour->_cost = nodeToAnalyze->_cost + 1;
+
+                bool beingAnalyzed = false;
+                vector< shared_ptr< Node > >::iterator foundIt;
+                tie( beingAnalyzed, foundIt ) = is_being_analyzed.findByCoord( neighbour );
+
+                if( !beingAnalyzed )
                 {
-                    int xNeighbour, yNeighbour;
-                    tie( xNeighbour, yNeighbour ) = coord;
-                    auto neighbour = make_shared< Node >( xNeighbour, yNeighbour );
-
-                    auto res = find_if( begin( analyzed ), end( analyzed ), [ &neighbour ] ( shared_ptr< Node > const& node )
+                    neighbour->_heuristic = manhattan_dist( neighbour, xEnd, yEnd );
+                    is_being_analyzed.push( neighbour );
+                }
+                else
+                {
+                    if( neighbour->_cost < ( *foundIt )->_cost )
                     {
-                        return ( node->_x == neighbour->_x ) && ( node->_y == neighbour->_y );
-                    } );
-
-                    if( res != end( analyzed ) )
-                        continue;
-
-                    bool found = false;
-                    vector< shared_ptr< Node > >::iterator foundIt;
-                    tie( found, foundIt ) = is_being_analyzed.findByCoord( neighbour );
-
-                    if( !found )
-                    {
-                        neighbour->_caller = nodeToAnalyze;
-                        neighbour->_cost = nodeToAnalyze->_cost + 1;
-                        neighbour->_heuristic = manhattan_dist( *neighbour, xEnd, yEnd );
+                        ( *foundIt )->_valid = false; // will be deleted automatically by the pop(). Avoid deleting in the middle of the queue and break the priority.
+                        neighbour->_heuristic = manhattan_dist( neighbour, xEnd, yEnd );
                         is_being_analyzed.push( neighbour );
-                    }
-                    else
-                    {
-                        neighbour->_cost = nodeToAnalyze->_cost + 1;
-                        if( neighbour->_cost < ( *foundIt )->_cost )
-                        {
-                            ( *foundIt )->_valid = false;
-                            neighbour->_caller = nodeToAnalyze;
-                            neighbour->_heuristic = manhattan_dist( *neighbour, xEnd, yEnd );
-                            is_being_analyzed.push( neighbour );
-                        }
                     }
                 }
             }
-
-            analyzed.push_back( nodeToAnalyze );
+            analyzed[ nodeToAnalyze->_y ][ nodeToAnalyze->_x ] = nodeToAnalyze;
         }
     }
 
