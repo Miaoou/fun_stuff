@@ -15,12 +15,12 @@ using namespace std; //to remove
 struct Node
 {
     Node( int xSz, int ySz, shared_ptr< Node > const& caller ) : _x( xSz ), _y( ySz ), _caller{ caller } {}
-    //Node( Node const& ) = default;
+    
+    shared_ptr< Node > _caller{ nullptr };
     int _x{ 0 };
     int _y{ 0 };
     int _cost{ 0 };
     int _heuristic{ 0 };
-    shared_ptr< Node > _caller{ nullptr };
     bool _valid{ true };
 };
 
@@ -31,7 +31,7 @@ priorityCondition = []( shared_ptr< Node > const& left, shared_ptr< Node > const
 };
 
 vector< shared_ptr< Node > >
-reconstruct_path( shared_ptr< Node > goal )
+reconstruct_path( shared_ptr< Node > const& goal )
 {
     vector< shared_ptr< Node > > path{ goal };
     shared_ptr< Node > node{ goal };
@@ -93,55 +93,52 @@ public:
 vector< shared_ptr< Node > >
 solveMaze( char(*ar)[10][9], int xSz, int ySz, int xEnd, int yEnd )
 {
-    array< array< shared_ptr< Node >, 10 >, 9 > analyzed;
-    PQueue is_being_analyzed;
+    array< array< shared_ptr< Node >, 10 >, 9 > closedList;
+    PQueue openList;
 
     auto startNode = make_shared< Node >( 1, 1, nullptr );
     startNode->_heuristic = manhattan_dist( startNode, xEnd, yEnd );
-    is_being_analyzed.push( startNode ); // start node
+    openList.push( startNode );
     
-    while( !is_being_analyzed.empty() )
+    while( !openList.empty() )
     {
-        auto nodeToAnalyze = is_being_analyzed.top();
-        is_being_analyzed.pop();
+        auto nodeToAnalyze = openList.top();
+        openList.pop();
 
-        if( !nodeToAnalyze->_valid )
+        if( !nodeToAnalyze->_valid ) // automatic deletion upon cost update. See below.
             continue;
 
-        if( ( *ar )[ nodeToAnalyze->_y ][ nodeToAnalyze->_x ] == 'E' )
-        {
-            analyzed[ nodeToAnalyze->_y ][ nodeToAnalyze->_x ] = nodeToAnalyze;
+        if( ( *ar )[ nodeToAnalyze->_y ][ nodeToAnalyze->_x ] == 'E' ) // exit found, reconstruct path
             return reconstruct_path( nodeToAnalyze );
-        }
         else
         {
-            for( auto const& neighbour : findNeighbours( ar, nodeToAnalyze ) )
+            for( auto const& neighbour : findNeighbours( ar, nodeToAnalyze ) ) // find all eligible adjacent nodes
             {
-                if( analyzed[ neighbour->_y ][ neighbour->_x ] )
+                if( closedList[ neighbour->_y ][ neighbour->_x ] ) // node already analyzed, skip
                     continue;
 
                 neighbour->_cost = nodeToAnalyze->_cost + 1;
 
                 bool beingAnalyzed = false;
                 vector< shared_ptr< Node > >::iterator foundIt;
-                tie( beingAnalyzed, foundIt ) = is_being_analyzed.findByCoord( neighbour );
+                tie( beingAnalyzed, foundIt ) = openList.findByCoord( neighbour );
 
-                if( !beingAnalyzed )
+                if( !beingAnalyzed ) // never encountered, add it to the queue
                 {
                     neighbour->_heuristic = manhattan_dist( neighbour, xEnd, yEnd );
-                    is_being_analyzed.push( neighbour );
+                    openList.push( neighbour );
                 }
                 else
                 {
-                    if( neighbour->_cost < ( *foundIt )->_cost )
+                    if( neighbour->_cost < ( *foundIt )->_cost ) // already being analyzed, but the current path is better, so we update the node (remove and add)
                     {
                         ( *foundIt )->_valid = false; // will be deleted automatically by the pop(). Avoid deleting in the middle of the queue and break the priority.
                         neighbour->_heuristic = manhattan_dist( neighbour, xEnd, yEnd );
-                        is_being_analyzed.push( neighbour );
+                        openList.push( neighbour );
                     }
                 }
             }
-            analyzed[ nodeToAnalyze->_y ][ nodeToAnalyze->_x ] = nodeToAnalyze;
+            closedList[ nodeToAnalyze->_y ][ nodeToAnalyze->_x ] = nodeToAnalyze;
         }
     }
 
