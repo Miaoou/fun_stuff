@@ -19,8 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{E7C8A094-C03B-4E9B-9EFF-A586224A8684}</ProjectGuid>
-    <RootNamespace>BloombergCodeCon</RootNamespace>
+    <ProjectGuid>{8E304809-362A-4EC0-8469-41155B6DEE49}</ProjectGuid>
+    <RootNamespace>BST_2</RootNamespace>
     <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -118,14 +118,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="BloombergCodeCon.cpp" />
-    <ClCompile Include="ConferenceRoomScheduler.cpp" />
-    <ClCompile Include="MatchingGloves.cpp" />
-  </ItemGroup>
-  <ItemGroup>
-    <ClInclude Include="Common.h" />
-    <ClInclude Include="ConferenceRoomScheduler.h" />
-    <ClInclude Include="MatchingGloves.h" />
+    <ClCompile Include="BST_2.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
