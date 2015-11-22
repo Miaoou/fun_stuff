@@ -42,11 +42,17 @@ reconstruct_path( shared_ptr< Node > const& goal )
 }
 
 bool
+isFreePath( char c )
+{
+    return ( c == ' ' || c == 'E' );
+}
+
+bool
 inboundAndFree( char( *ar )[ 10 ][ 9 ], int x, int y, int X, int Y )
 {
     return x <= X && x >= 0
         && y <= Y && y >= 0
-        && ( ( *ar )[ y ][ x ] == ' ' || ( *ar )[ y ][ x ] == 'E' );
+        && isFreePath( ( *ar )[ y ][ x ] );
 }
 
 int
